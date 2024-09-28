@@ -10,36 +10,77 @@ public class Main {
         Scanner scanner = new Scanner(System.in);
         CurrencyManager currencyManager = new CurrencyManager();
 
+        // Adicionando algumas moedas padrão
         currencyManager.addCurrency("USD", "United States Dollar");
         currencyManager.addCurrency("BRL", "Real");
         currencyManager.addCurrency("EUR", "Euro");
         currencyManager.addCurrency("GBP", "British Pound Sterling");
         currencyManager.addCurrency("JPY", "Japanese Yen");
         currencyManager.addCurrency("AUD", "Australian Dollar");
-        
-        // Passo 1: Escolha da moeda de origem
-        System.out.println("Escolha a moeda de origem:");
-        Currency originCurrency = chooseCurrency(scanner, currencyManager);
 
-        System.out.println("Você escolheu a moeda de origem: " + originCurrency);
+        Currency originCurrency = null; // Inicializa como null
 
-        // Passo 2: Escolha da moeda de destino
-        System.out.println("Escolha a moeda de destino para conversão:");
-        Currency destinationCurrency = chooseCurrency(scanner, currencyManager);
+        while (true) {
+            System.out.println("\nMenu:");
+            System.out.println("1. Escolher moeda de origem");
+            System.out.println("2. Escolher moeda de destino");
+            System.out.println("3. Definir chave de API alternativa");
+            System.out.println("0. Sair");
 
-        if (destinationCurrency == null) {
-            return;
+            System.out.print("Escolha uma opção: ");
+            int option = scanner.nextInt();
+
+            switch (option) {
+                case 1:
+                    // Passo 1: Escolha da moeda de origem
+                    System.out.println("Escolha a moeda de origem:");
+                    originCurrency = chooseCurrency(scanner, currencyManager);
+                    System.out.println("Você escolheu a moeda de origem: " + originCurrency);
+                    break;
+
+                case 2:
+                    // Passo 2: Escolha da moeda de destino
+                    if (originCurrency == null) { // Verifica se a origem foi escolhida
+                        System.out.println("Por favor, escolha a moeda de origem primeiro.");
+                        break;
+                    }
+
+                    System.out.println("Escolha a moeda de destino para conversão:");
+                    Currency destinationCurrency = chooseCurrency(scanner, currencyManager);
+                    if (destinationCurrency == null) {
+                        break;
+                    }
+                    System.out.println("Você escolheu a moeda de destino: " + destinationCurrency);
+
+                    System.out.print("Digite o valor que deseja converter de " + originCurrency + " para " + destinationCurrency + ": ");
+                    double amount = scanner.nextDouble();
+
+                    CurrencyConverter converter = new CurrencyConverter(originCurrency, destinationCurrency, amount);
+                    converter.convert();
+                    break;
+
+                case 3:
+                    // Opção para definir chave de API alternativa
+                    System.out.print("Digite a nova chave de API: ");
+                    String newApiKey = scanner.next();
+                    if (CurrencyUtils.testApiKey(newApiKey)) {
+                        CurrencyUtils.setAlternativeApiKey(newApiKey);
+                        System.out.println("Chave de API alternativa definida com sucesso.");
+                    } else {
+                        System.out.println("Chave de API inválida. Mantendo a chave padrão.");
+                    }
+                    break;
+
+                case 0:
+                    System.out.println("Saindo...");
+                    scanner.close();
+                    return;
+
+                default:
+                    System.out.println("Escolha inválida.");
+                    break;
+            }
         }
-
-        System.out.println("Você escolheu a moeda de destino: " + destinationCurrency);
-
-        System.out.print("Digite o valor que deseja converter de " + originCurrency + " para " + destinationCurrency + ": ");
-        double amount = scanner.nextDouble();
-
-        CurrencyConverter converter = new CurrencyConverter(originCurrency, destinationCurrency, amount);
-        converter.convert();
-
-        scanner.close();
     }
 
     private static Currency chooseCurrency(Scanner scanner, CurrencyManager currencyManager) {

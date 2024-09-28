@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -12,20 +13,38 @@ import java.net.http.HttpResponse;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 public class CurrencyUtils {
 
-    private static final String BASE_URL = "https://v6.exchangerate-api.com/v6/";
+    public static final String BASE_URL = "https://v6.exchangerate-api.com/v6/";
+    private static String apiKey;
+
+    static {
+        loadApiKey();
+    }
+
+    private static void loadApiKey() {
+        try (InputStream input = CurrencyUtils.class.getClassLoader().getResourceAsStream("config.properties")) {
+            Properties prop = new Properties();
+            if (input == null) {
+                System.out.println("Desculpe, não foi possível encontrar o arquivo config.properties.");
+                return;
+            }
+            prop.load(input);
+            apiKey = prop.getProperty("apiKey");
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+    }
 
     public static String getApiKey() {
-        // Retorne sua chave da API aqui
-        return "1d90dd497ba50270620d595b";
+        return apiKey;
     }
 
     // Método para obter todos os códigos de moeda
     public static Map<String, String> getAllCurrencies() {
-        String key = getApiKey();
-        String url = BASE_URL + key + "/codes";
+        String url = BASE_URL + getApiKey() + "/codes";
         
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
@@ -59,5 +78,33 @@ public class CurrencyUtils {
             e.printStackTrace();
             return null;
         }
+    }
+
+    // Método para testar a chave da API
+    // Escolhi adicionar um metodo para usar uma chave de API diferente sem sobrescrever a original
+    // para que eu possa usar uma chave padrao facilitando o uso no periodo em que esta chave e valida
+    // mas que o projeto nao necessite de alteracoes futuramente, caso a chave venha a vencer.
+    public static boolean testApiKey(String apiKey) {
+        String url = BASE_URL + apiKey + "/codes";
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .GET()
+                .build();
+
+        try {
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            Gson gson = new Gson();
+            JsonObject jsonObject = gson.fromJson(response.body(), JsonObject.class);
+
+            return jsonObject.has("supported_codes");
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public static void setAlternativeApiKey(String newApiKey) {
+        apiKey = newApiKey;
     }
 }
